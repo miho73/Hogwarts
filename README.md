@@ -1,6 +1,8 @@
 # Hogwarts
 ### 호그와트 마법세계를 배경으로 제작되어 공부를 도와주는 Discord 서버 봇입니다.
 ---
+<img src="https://images.ctfassets.net/usf1vwtuqyxm/3QQaEkThAnIAiXveGhJYD9/f79a571dbe9fd456d65e783040601fdc/hogwarts-castle-.jpg?fm=jpg" width="960">
+
 #### 1. 프레임워크, 패키지 알림
 > * Discord.NET - [MIT](https://opensource.org/licenses/MIT)
 > * System.Data.SQLite - [Public Domain](https://www.sqlite.org/copyright.html)
