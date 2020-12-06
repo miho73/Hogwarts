@@ -1,20 +1,28 @@
 ﻿using Discord.Commands;
 using Discord.WebSocket;
 using Hogwarts.Database;
+using Hogwarts.Database.Log;
+using Hogwarts.Database.Log.Dormitory;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Hogwarts.CmdExe.Attributes;
 
 namespace Hogwarts.CmdExe
 {
-    public partial class Dormitory : ModuleBase<SocketCommandContext>
+    [ExclusiveCmd(784077924776017980)]
+    public class Dormitory : ModuleBase<SocketCommandContext>
     {
+        private static readonly ulong GRIFFINDOR_CHANNEL_ID = 784202186686332968;
+        private static readonly ulong HUFFLEPUFF_CHANNEL_ID = 784202500793171978;
+        private static readonly ulong RAVENCLAW_CHANNEL_ID = 784202571060346941;
+        private static readonly ulong SLYTHERIN_CHANNEL_ID = 784202928369303582;
         private readonly Dictionary<string, ulong> DormitoryRoles = new Dictionary<string, ulong>()
         {
-            { "Gryffindor", 784202186686332968 },
-            { "Hufflepuff", 784202500793171978 },
-            { "Ravenclaw", 784202571060346941 },
-            { "Slytherin", 784202928369303582 }
+            { "Gryffindor", GRIFFINDOR_CHANNEL_ID },
+            { "Hufflepuff", HUFFLEPUFF_CHANNEL_ID },
+            { "Ravenclaw", RAVENCLAW_CHANNEL_ID },
+            { "Slytherin", SLYTHERIN_CHANNEL_ID }
         };
         private readonly string[] Dormitories = { "Gryffindor", "Hufflepuff", "Ravenclaw", "Slytherin" };
         private readonly Log log = new Log();
@@ -29,9 +37,9 @@ namespace Hogwarts.CmdExe
             });
         }
 
-        private readonly Student student = new Student();
+        private readonly Students student = new Students();
         [Command("mhat")]
-        [Summary("Assign your dormitory.")]
+        [Summary("기숙사를 배정합니다.")]
         public async Task AssignAffiliation()
         {
             try
@@ -65,7 +73,8 @@ namespace Hogwarts.CmdExe
         public async Task<bool> IsAlreadyHasAffiliation(SocketGuildUser user)
         {
             long dat = await student.ReadColum<long>(user.Id, "Dormitory");
-            if (dat == -1) return false;
+            if (dat == default) throw new Exception("User is not registered");
+            else if (dat == -1) return false;
             return true;
         }
 

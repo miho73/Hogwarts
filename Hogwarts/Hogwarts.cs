@@ -4,7 +4,9 @@ using Discord.WebSocket;
 using Hogwarts.Database;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -37,9 +39,9 @@ namespace Hogwarts
                 discordSocket.Log += Log;
                 discordSocket.Ready += Ready;
                 discordSocket.MessageReceived += MessageReceivedAsync;
-                discordSocket.ReactionAdded += ReactionReceivedAsync;
                 commands.AddModulesAsync(assembly: Assembly.GetEntryAssembly(), services: null);
                 messageHistory = new MessageHistory();
+                UpdateCmdHelp();
             }
             else
             {
@@ -102,23 +104,43 @@ namespace Hogwarts
             });
 
             var context = new SocketCommandContext(discordSocket, message as SocketUserMessage);
-            await commands.ExecuteAsync(
-                context: context,
-                argPos: 0,
-                services: null
-           );
+            try
+            {
+                var result = await commands.ExecuteAsync(
+                    context: context,
+                    argPos: 0,
+                    services: null
+                );
+                if(!result.IsSuccess)
+                {
+                    switch(result.Error)
+                    {
+                        case CommandError.Exception:
+                            if (result is ExecuteResult execResult)
+                            {
+                                Exception ex = execResult.Exception;
+                                Console.Error.WriteLine(ex.Message + "\n" + ex.StackTrace);
+                            }
+                            break;
+                    }
+                }
+            }
+            catch
+            {
+                
+            }
         }
 
-        private async Task ReactionReceivedAsync(Cacheable<IUserMessage, ulong> message, ISocketMessageChannel channel, SocketReaction reaction)
+        public static JObject CmdHelp;
+        public static void UpdateCmdHelp()
         {
-            Console.WriteLine(channel.Id);
-
-            if (channel.Id == 784088929351630858)
+            try
             {
-                var msg = await message.GetOrDownloadAsync();
-                if (msg != null && reaction.User.IsSpecified)
-                    Console.WriteLine($"{reaction.User.Value} just added a reaction '{reaction.Emote}' " +
-                                      $"to {msg.Author}'s message ({msg.Id}).");
+                CmdHelp = JObject.Parse(File.ReadAllText("CommandHelp/cmdHelp.json"));
+            }
+            catch(Exception e)
+            {
+                throw e;
             }
         }
     }

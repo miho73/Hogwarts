@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Hogwarts.CmdExe
 {
-    public partial class Commands : ModuleBase<SocketCommandContext>
+    public class Permission : ModuleBase<SocketCommandContext>
     {
         public bool Sudo(SocketGuildUser auther)
         {

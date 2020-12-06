@@ -1,4 +1,5 @@
-﻿using Discord.Commands;
+﻿using Discord;
+using Discord.Commands;
 using Discord.WebSocket;
 using System;
 using System.Linq;
@@ -15,8 +16,7 @@ namespace Hogwarts.CmdExe.Attributes
         {
             if (context.User is SocketGuildUser gUser)
             {
-                if (gUser.Roles.Any(r => r.Name == _name))
-                    return PreconditionResult.FromSuccess();
+                if (gUser.Roles.Any(r => r.Name == _name)) return PreconditionResult.FromSuccess();
                 else
                 {
                     string retmsg = $"권한 거부: *{_name}*만이 이 명령을 수행할 수 있습니다.";
