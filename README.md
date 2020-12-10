@@ -7,6 +7,7 @@
 > * Discord.NET - [MIT](https://opensource.org/licenses/MIT)
 > * System.Data.SQLite - [Public Domain](https://www.sqlite.org/copyright.html)
 > * Newtonsoft JSON - [MIT](https://licenses.nuget.org/MIT)
+> * FFmpeg - [LGPL](https://www.ffmpeg.org/legal.html) (실제로 구현되지는 않음)
 
 #### 2. 개발 참여
 > * **미호**: 개발 주도
