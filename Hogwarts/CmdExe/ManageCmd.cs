@@ -4,10 +4,9 @@ using Discord.WebSocket;
 using System.Text;
 using System.Threading.Tasks;
 using Hogwarts.CmdExe.Attributes;
-using System.Linq;
-using System.Collections.Generic;
 using System;
 using Newtonsoft.Json.Linq;
+using Hogwarts.Database;
 
 //Command here will be applied globally
 
@@ -66,6 +65,7 @@ namespace Hogwarts.CmdExe
 
         [Command("help")]
         [Summary("사용 가능한 명령어에 대한 설명을 표시합니다.")]
+        [ExclusiveCmd(784077924776017980)]
         public async Task Help([Remainder] string cmd)
         {
             string[] cmdPt = cmd.Split(' ');
@@ -95,6 +95,26 @@ namespace Hogwarts.CmdExe
             await Context.Channel.SendMessageAsync("", false, embed.Build());
         }
 
+        [Command("help")]
+        [Summary("사용 가능한 명령어들을 열거합니다.")]
+        public async Task HelpEnum()
+        {
+            EmbedBuilder embed = new EmbedBuilder()
+            {
+                Title = "명령어 목록",
+                Color = Color.Purple,
+                Description = "각 명령에 대한 자세한 설명이 필요하면 `help <명령어>`를 입력하세요."
+            };
+            JArray cmds = (JArray)Hogwarts.CmdHelp.GetValue("commands");
+            string cmdRow = "";
+            foreach(string cmd in cmds)
+            {
+                cmdRow += $"`{cmd}`\n";
+            }
+            embed.AddField("Hogwarts", cmdRow);
+            await Context.Channel.SendMessageAsync("", false, embed.Build());
+        }
+
         [Group("sudo")]
         [Sudo("@Principle")]
         [ExclusiveCmd(785220297422667846)]
@@ -113,6 +133,48 @@ namespace Hogwarts.CmdExe
                 {
                     await SendMsg(e.Message + "\n" + e.StackTrace);
                 }
+            }
+
+            [Command("studentsql")]
+            public async Task StudentSql(ulong id, [Remainder] string query)
+            {
+                try
+                {
+                    Student student = new Student();
+                    await student.InitDB(id);
+                    await SendMsg((await student.ExecuteNonQuery(id, query)).ToString());
+                }
+                catch(Exception e)
+                {
+                    await SendMsg(e.Message + "\n" + e.StackTrace);
+                }
+            }
+            
+            [Command("msg_log_sql")]
+            public async Task MsgLogSql([Remainder] string query)
+            {
+                try
+                {
+                    MessageHistory messageHistory = new MessageHistory();
+                    await SendMsg((await messageHistory.ExecuteNonquery(query)).ToString());
+                }
+                catch(Exception e)
+                {
+                    await SendMsg(e.Message + "\n" + e.StackTrace);
+                }
+            }
+
+            [Command("shutdown")]
+            public async Task Shutdown()
+            {
+                await SendMsg($"{Context.User.Username}({Context.User.Id})이(가) shutdown을 실행했습니다.");
+                Environment.Exit(0);
+            }
+
+            [Command("help")]
+            public async Task Help()
+            {
+                await SendMsg("`UpdateCommandHelp`\n`studentsql`\n`msg_log_sql`\n`shutdown`");
             }
 
             public Task SendMsg(string text)

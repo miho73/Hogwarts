@@ -19,9 +19,9 @@ namespace Hogwarts.Database
     {
         private readonly string DB_LOCATION = "Log/msg_history.db";
 
-        public MessageHistory()
+        public async Task Init()
         {
-            ExecuteNonquery("CREATE TABLE IF NOT EXISTS MsgHistory (" +
+            await ExecuteNonquery("CREATE TABLE IF NOT EXISTS MsgHistory (" +
                 "Key INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL," +
                 "Message TEXT NOT NULL," +
                 "Message_id INTEGER NOT NULL," +
@@ -34,33 +34,33 @@ namespace Hogwarts.Database
 
         public async Task AddDatum(History history)
         {
-            using (SQLiteConnection con = new SQLiteConnection($"Data Source={DB_LOCATION};Version=3;"))
-            {
-                await con.OpenAsync();
+            using SQLiteConnection con = new SQLiteConnection($"Data Source={DB_LOCATION};Version=3;");
+            await con.OpenAsync();
 
-                SQLiteCommand command = new SQLiteCommand("INSERT INTO MsgHistory " +
-                    "(Message, Message_id, User_id, Time, User_name, Channel_id, Channel_name) VALUES" +
-                    "(@msg, @msgId, @uId, @time, @uName, @rId, @cName)", con);
-                command.Parameters.AddWithValue("@msg", history.Message);
-                command.Parameters.AddWithValue("@msgId", history.MsgID);
-                command.Parameters.AddWithValue("@uId", history.UsrID);
-                command.Parameters.AddWithValue("@time", history.Time.ToString("yyyy/MM/dd HH:mm:ss"));
-                command.Parameters.AddWithValue("@uName", history.UsrName);
-                command.Parameters.AddWithValue("@rId", history.ChannelID);
-                command.Parameters.AddWithValue("@cName", history.Channel_name);
-                await command.ExecuteNonQueryAsync();
-            }
+            SQLiteCommand command = new SQLiteCommand("INSERT INTO MsgHistory " +
+                "(Message, Message_id, User_id, Time, User_name, Channel_id, Channel_name) VALUES" +
+                "(@msg, @msgId, @uId, @time, @uName, @rId, @cName)", con);
+            command.Parameters.AddWithValue("@msg", history.Message);
+            command.Parameters.AddWithValue("@msgId", history.MsgID);
+            command.Parameters.AddWithValue("@uId", history.UsrID);
+            command.Parameters.AddWithValue("@time", history.Time.ToString("yyyy/MM/dd HH:mm:ss"));
+            command.Parameters.AddWithValue("@uName", history.UsrName);
+            command.Parameters.AddWithValue("@rId", history.ChannelID);
+            command.Parameters.AddWithValue("@cName", history.Channel_name);
+            await command.ExecuteNonQueryAsync();
         }
 
-        private async void ExecuteNonquery(string cmd)
+        public async Task<int> ExecuteNonquery(string cmd)
         {
+            int result;
             using (SQLiteConnection con = new SQLiteConnection($"Data Source={DB_LOCATION};Version=3;"))
             {
                 await con.OpenAsync();
 
                 SQLiteCommand command = new SQLiteCommand(cmd, con);
-                await command.ExecuteNonQueryAsync();
+                result = await command.ExecuteNonQueryAsync();
             }
+            return result;
         }
     }
 }

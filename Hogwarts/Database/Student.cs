@@ -67,6 +67,7 @@ namespace Hogwarts.Database
 
         public async Task<StudyTransactionResult> FinishStudy(ulong id)
         {
+            await InitDB(id);
             StudyTransactionResult result = StudyTransactionResult.ERROR;
             using (SQLiteConnection con = new SQLiteConnection($"Data Source={DB_LOCATION + id}.db;Version=3;"))
             {
@@ -107,6 +108,7 @@ namespace Hogwarts.Database
 
         public async Task<StudyTransactionResult> DisposeStudy(ulong id)
         {
+            await InitDB(id);
             StudyTransactionResult result = StudyTransactionResult.ERROR;
             using (SQLiteConnection con = new SQLiteConnection($"Data Source={DB_LOCATION + id}.db;Version=3;"))
             {
@@ -139,6 +141,7 @@ namespace Hogwarts.Database
 
         public async Task<T> ReadStudyTable<T>(ulong id, string colum)
         {
+            await InitDB(id);
             T ret = default;
             using (SQLiteConnection con = new SQLiteConnection($"Data Source={DB_LOCATION + id}.db;Version=3;"))
             {
@@ -176,6 +179,7 @@ namespace Hogwarts.Database
         }
         public async Task<Dictionary<DateTimeOffset, StudyRecord>> GetStudyTime(ulong id)
         {
+            await InitDB(id);
             Dictionary<DateTimeOffset, StudyRecord> record = new Dictionary<DateTimeOffset, StudyRecord>();
             using (SQLiteConnection con = new SQLiteConnection($"Data Source={DB_LOCATION + id}.db;Version=3;"))
             {
@@ -209,15 +213,17 @@ namespace Hogwarts.Database
             return record;
         }
 
-        private async Task ExecuteNonQuery(ulong id, string cmd)
+        public async Task<int> ExecuteNonQuery(ulong id, string cmd)
         {
+            int result;
             using (SQLiteConnection con = new SQLiteConnection($"Data Source={DB_LOCATION+id}.db;Version=3;"))
             {
                 await con.OpenAsync();
 
                 SQLiteCommand command = new SQLiteCommand(cmd, con);
-                await command.ExecuteNonQueryAsync();
+                result = await command.ExecuteNonQueryAsync();
             }
+            return result;
         }
     }
 }

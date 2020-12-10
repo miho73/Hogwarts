@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using Hogwarts.CmdExe;
 using Hogwarts.Database;
 using Newtonsoft.Json.Linq;
 using System;
@@ -8,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -22,6 +24,9 @@ namespace Hogwarts
 
         static void Main()
         {
+            var handle = GetConsoleWindow();
+            ShowWindow(handle, SW_HIDE);
+
             Console.OutputEncoding = Encoding.UTF8;
             new Hogwarts().MainAsync().GetAwaiter().GetResult();
         }
@@ -56,6 +61,7 @@ namespace Hogwarts
             await MakeInfoLog("Starter", "Loading settings");
             await discordSocket.LoginAsync(TokenType.Bot, settingsObject.Value<string>("Token"));
             await discordSocket.StartAsync();
+
             await Task.Delay(-1);
         }
 
@@ -82,6 +88,15 @@ namespace Hogwarts
             return Log(new LogMessage(LogSeverity.Critical, from, msg));
         }
 
+        [DllImport("kernel32.dll")]
+        static extern IntPtr GetConsoleWindow();
+
+        [DllImport("user32.dll")]
+        static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        private const int SW_HIDE = 0;
+        private const int SW_SHOW = 5;
+
         private Task Ready()
         {
             Console.WriteLine($"{discordSocket.CurrentUser} Connected!");
@@ -92,6 +107,7 @@ namespace Hogwarts
         {
             if (message.Author.Id == discordSocket.CurrentUser.Id) return;
 
+            await messageHistory.Init();
             await messageHistory.AddDatum(new History()
             {
                 Message = message.Content,
