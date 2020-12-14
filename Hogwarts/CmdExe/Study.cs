@@ -57,9 +57,82 @@ namespace Hogwarts.CmdExe
         }
 
         [Group("record")]
+        [Summary("공부 기록을 알려드립니다. 사용법: `record [today/week/month/year/total/avg]`")]
         public class ShowRecord : ModuleBase<SocketCommandContext>
         {
-            private Student student = new Student();
+            private enum Range
+            {
+                WEEK,
+                MONTH,
+                YEAR,
+                TOTAL
+            }
+            private async Task<TimeSpan> GetSpanOfRange(Range range)
+            {
+                ulong id = Context.User.Id;
+                Dictionary<DateTimeOffset, StudyRecord> records = await student.GetStudyTime(id);
+                DateTimeOffset today = DateTimeOffset.Now;
+                StudyRecord sum = new StudyRecord()
+                {
+                    comment = new List<string>(),
+                    span = TimeSpan.FromSeconds(0)
+                };
+
+                switch (range)
+                {
+                    case Range.WEEK:
+                        int diff = (7 + (today.DayOfWeek - DayOfWeek.Monday)) % 7;
+                        DateTimeOffset BeginOfWeek = today.AddDays(-1 * diff).Date;
+                        for (int i = 0; i < 7; i++)
+                        {
+                            if (BeginOfWeek.CompareTo(today) > 0) break;
+                            StudyRecord dayRecord = records.GetValueOrDefault(BeginOfWeek);
+                            BeginOfWeek.AddDays(1);
+                            if (dayRecord == null) continue;
+                            sum += dayRecord;
+                        }
+                        break;
+
+                    case Range.MONTH:
+                        DateTimeOffset date = DateTimeOffset.Now;
+                        DateTimeOffset firstDayOfMonth = new DateTime(date.Year, date.Month, 1).Date;
+                        DateTimeOffset lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1).Date;
+                        do
+                        {
+                            if (records.ContainsKey(firstDayOfMonth))
+                            {
+                                sum += records[firstDayOfMonth];
+                            }
+                            firstDayOfMonth = firstDayOfMonth.AddDays(1);
+                        } while (firstDayOfMonth.CompareTo(lastDayOfMonth) <= 0 && firstDayOfMonth.CompareTo(today) <= 0);
+                        break;
+
+                    case Range.YEAR:
+                        DateTimeOffset firstDayOfYear = new DateTime(today.Year, 1, 1).Date;
+                        DateTimeOffset lastDayOfYear = firstDayOfYear.AddYears(1).AddDays(-1).Date;
+                        do
+                        {
+                            if (records.ContainsKey(firstDayOfYear))
+                            {
+                                sum += records[firstDayOfYear];
+                            }
+                            firstDayOfYear = firstDayOfYear.AddDays(1);
+                        } while (firstDayOfYear.CompareTo(lastDayOfYear) <= 0 && firstDayOfYear.CompareTo(today) <= 0);
+                        break;
+
+                    case Range.TOTAL:
+                        foreach (StudyRecord rec in records.Values) sum += rec;
+                        break;
+
+                    default:
+                        throw new ArgumentException($"Unexpected range: {range}");
+                }
+                return sum.span;
+            }
+
+            private readonly Student student = new Student();
+            private readonly Students students = new Students();
+
             [Command("today")]
             public async Task TodayRecord()
             {
@@ -76,110 +149,59 @@ namespace Hogwarts.CmdExe
             [Command("week")]
             private async Task WeeklyRecord()
             {
-                ulong id = Context.User.Id;
-                Dictionary<DateTimeOffset, StudyRecord> records = await student.GetStudyTime(id);
-                DateTimeOffset today = DateTimeOffset.Now;
-                StudyRecord sum = new StudyRecord()
-                {
-                    comment = new List<string>(),
-                    span = TimeSpan.FromSeconds(0)
-                };
-                DateTimeOffset dt = DateTimeOffset.Now;
-                int diff = (7 + (dt.DayOfWeek - DayOfWeek.Monday)) % 7;
-                DateTimeOffset BeginOfWeek = dt.AddDays(-1 * diff).Date;
-                for (int i = 0; i < 7; i++)
-                {
-                    if (BeginOfWeek.CompareTo(today) > 0) break;
-                    StudyRecord dayRecord = records.GetValueOrDefault(BeginOfWeek);
-                    BeginOfWeek.AddDays(1);
-                    if (dayRecord == null) continue;
-                    sum += dayRecord;
-                }
-                if (sum.span.TotalSeconds == 0)
+                TimeSpan sum = await GetSpanOfRange(Range.WEEK);
+                if (sum.TotalSeconds == 0)
                 {
                     await SendMsg("이번주 공부한 기록이 없습니다.");
                 }
-                else await SendMsg($"이번주 {TimeFormat.SpanToProper(sum.span)} 공부했습니다.");
+                else await SendMsg($"이번주 {TimeFormat.SpanToProper(sum)} 공부했습니다.");
             }
 
             [Command("month")]
             public async Task MonthlyRecord()
             {
-                ulong id = Context.User.Id;
-                Dictionary<DateTimeOffset, StudyRecord> records = await student.GetStudyTime(id);
-                DateTimeOffset today = DateTimeOffset.Now;
-                StudyRecord sum = new StudyRecord()
-                {
-                    comment = new List<string>(),
-                    span = TimeSpan.FromSeconds(0)
-                };
-                DateTimeOffset date = DateTimeOffset.Now;
-                DateTimeOffset firstDayOfMonth = new DateTime(date.Year, date.Month, 1).Date;
-                DateTimeOffset lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1).Date;
-                do
-                {
-                    if (records.ContainsKey(firstDayOfMonth))
-                    {
-                        sum += records[firstDayOfMonth];
-                    }
-                    firstDayOfMonth = firstDayOfMonth.AddDays(1);
-                } while (firstDayOfMonth.CompareTo(lastDayOfMonth) <= 0 && firstDayOfMonth.CompareTo(today) <= 0);
-                if (sum.span.TotalSeconds == 0)
+                TimeSpan sum = await GetSpanOfRange(Range.MONTH);
+                if (sum.TotalSeconds == 0)
                 {
                     await SendMsg("이번달 공부한 기록이 없습니다.");
                 }
-                else await SendMsg($"이번달 {TimeFormat.SpanToProper(sum.span)} 공부했습니다.");
+                else await SendMsg($"이번달 {TimeFormat.SpanToProper(sum)} 공부했습니다.");
             }
 
             [Command("year")]
             public async Task YearRecord()
             {
-                ulong id = Context.User.Id;
-                Dictionary<DateTimeOffset, StudyRecord> records = await student.GetStudyTime(id);
-                DateTimeOffset today = DateTimeOffset.Now;
-                StudyRecord sum = new StudyRecord()
-                {
-                    comment = new List<string>(),
-                    span = TimeSpan.FromSeconds(0)
-                };
-                DateTimeOffset date = DateTimeOffset.Now;
-                DateTimeOffset firstDayOfYear = new DateTime(date.Year, 1, 1).Date;
-                DateTimeOffset lastDayOfYear = firstDayOfYear.AddYears(1).AddDays(-1).Date;
-                do
-                {
-                    if (records.ContainsKey(firstDayOfYear))
-                    {
-                        sum += records[firstDayOfYear];
-                    }
-                    firstDayOfYear = firstDayOfYear.AddDays(1);
-                } while (firstDayOfYear.CompareTo(lastDayOfYear) <= 0 && firstDayOfYear.CompareTo(today) <= 0);
-                if (sum.span.TotalSeconds == 0)
+                TimeSpan sum = await GetSpanOfRange(Range.YEAR);
+                if (sum.TotalSeconds == 0)
                 {
                     await SendMsg("이번년에 공부한 기록이 없습니다.");
                 }
-                else await SendMsg($"이번년에 {TimeFormat.SpanToProper(sum.span)} 공부했습니다.");
+                else await SendMsg($"이번년에 {TimeFormat.SpanToProper(sum)} 공부했습니다.");
             }
 
             [Command("total")]
-            [Summary("공부 기록을 알려드립니다. 사용법: `record [today/week/month/year/total]`")]
             public async Task TotalRecord()
             {
-                ulong id = Context.User.Id;
-                Dictionary<DateTimeOffset, StudyRecord> records = await student.GetStudyTime(id);
-                StudyRecord sum = new StudyRecord()
-                {
-                    comment = new List<string>(),
-                    span = TimeSpan.FromSeconds(0)
-                };
-                foreach (StudyRecord rec in records.Values)
-                {
-                    sum += rec;
-                }
-                if (sum.span.TotalSeconds == 0)
+                TimeSpan sum = await GetSpanOfRange(Range.TOTAL);
+                if (sum.TotalSeconds == 0)
                 {
                     await SendMsg("공부를 한 적이 없습니다.");
                 }
-                else await SendMsg($"{TimeFormat.SpanToProper(sum.span)}만큼 공부했습니다.");
+                else await SendMsg($"{TimeFormat.SpanToProper(sum)}만큼 공부했습니다.");
+            }
+
+            [Command("avg")]
+            [Summary("전체 공부시간 하루 평균을 알려드립니다.")]
+            public async Task Avg()
+            {
+                TimeSpan avgSpan = TimeSpan.FromSeconds(
+                    (await GetSpanOfRange(Range.TOTAL)).TotalSeconds
+                    /
+                    DateTimeOffset.Now.Subtract(
+                    DateTimeOffset.ParseExact(
+                        await students.ReadColum<string>(Context.User.Id, "JoinedDate"), "yyyy/MM/dd HH:mm:ss", null)
+                    ).TotalDays);
+                await SendMsg($"하루평균 {TimeFormat.SpanToProper(avgSpan)}만큼 공부했습니다.");
             }
 
             [Command]

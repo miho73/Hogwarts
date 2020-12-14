@@ -30,20 +30,18 @@ namespace Hogwarts.Database
 
         public async Task AddDatum(StudentRecord record)
         {
-            using (SQLiteConnection con = new SQLiteConnection($"Data Source={DB_LOCATION};Version=3;"))
-            {
-                await con.OpenAsync();
+            using SQLiteConnection con = new SQLiteConnection($"Data Source={DB_LOCATION};Version=3;");
+            await con.OpenAsync();
 
-                SQLiteCommand command = new SQLiteCommand("INSERT INTO Students " +
-                    "(ID, Name, Dormitory, JoinedDate, Grade) VALUES" +
-                    "(@uid, @uname, @dorm, @joined, @grade)", con);
-                command.Parameters.AddWithValue("@uid", record.ID);
-                command.Parameters.AddWithValue("@uname", record.Name);
-                command.Parameters.AddWithValue("@dorm", TxtDormToDormCode(record.Dormitory));
-                command.Parameters.AddWithValue("@joined", record.JoinedDate.ToString("yyyy/MM/dd HH:mm:ss"));
-                command.Parameters.AddWithValue("@grade", record.Grade);
-                await command.ExecuteNonQueryAsync();
-            }
+            SQLiteCommand command = new SQLiteCommand("INSERT INTO Students " +
+                "(ID, Name, Dormitory, JoinedDate, Grade) VALUES" +
+                "(@uid, @uname, @dorm, @joined, @grade)", con);
+            command.Parameters.AddWithValue("@uid", record.ID);
+            command.Parameters.AddWithValue("@uname", record.Name);
+            command.Parameters.AddWithValue("@dorm", TxtDormToDormCode(record.Dormitory));
+            command.Parameters.AddWithValue("@joined", record.JoinedDate.ToString("yyyy/MM/dd HH:mm:ss"));
+            command.Parameters.AddWithValue("@grade", record.Grade);
+            await command.ExecuteNonQueryAsync();
         }
 
         //TODO: Change to ReadColum function
@@ -138,32 +136,28 @@ namespace Hogwarts.Database
 
         public async Task RenameStudent(ulong id, string NewName)
         {
-            using (SQLiteConnection con = new SQLiteConnection($"Data Source={DB_LOCATION};Version=3;"))
+            using SQLiteConnection con = new SQLiteConnection($"Data Source={DB_LOCATION};Version=3;");
+            await con.OpenAsync();
+            try
             {
-                await con.OpenAsync();
-                try
-                {
-                    SQLiteCommand command = new SQLiteCommand("UPDATE Students SET Name=@name WHERE ID=@id;", con);
-                    command.Parameters.AddWithValue("@id", id);
-                    command.Parameters.AddWithValue("@name", NewName);
-                    await command.ExecuteNonQueryAsync();
-                } 
-                catch(Exception e)
-                {
-                    Console.Error.WriteLine(e.Message);
-                }
+                SQLiteCommand command = new SQLiteCommand("UPDATE Students SET Name=@name WHERE ID=@id;", con);
+                command.Parameters.AddWithValue("@id", id);
+                command.Parameters.AddWithValue("@name", NewName);
+                await command.ExecuteNonQueryAsync();
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e.Message);
             }
         }
 
         private async Task ExecuteNonquery(string cmd)
         {
-            using (SQLiteConnection con = new SQLiteConnection($"Data Source={DB_LOCATION};Version=3;"))
-            {
-                await con.OpenAsync();
+            using SQLiteConnection con = new SQLiteConnection($"Data Source={DB_LOCATION};Version=3;");
+            await con.OpenAsync();
 
-                SQLiteCommand command = new SQLiteCommand(cmd, con);
-                await command.ExecuteNonQueryAsync();
-            }
+            SQLiteCommand command = new SQLiteCommand(cmd, con);
+            await command.ExecuteNonQueryAsync();
         }
     }
 }

@@ -16,6 +16,7 @@ namespace Hogwarts.CmdExe
     {
         [Command("whoami")]
         [Summary("여러분이 아는 whoami 맞습니다.")]
+        [ExclusiveCmd(784077924776017980)]
         public async Task Whoami()
         {
             bool isSU = false;
@@ -42,6 +43,13 @@ namespace Hogwarts.CmdExe
                 rep = Context.User.Username + "  (" + roleNames + ")\n";
                 await SendMsg(rep);
             }
+        }
+
+        [Command("ping")]
+        [Summary("봇에게 Ping을 보냅니다.")]
+        public async Task Ping()
+        {
+            await Context.User.SendMessageAsync("Received Ping from you: replyed");
         }
 
         [Command("purge")]
